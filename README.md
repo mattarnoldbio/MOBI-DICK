@@ -1,6 +1,6 @@
 # MetagenOmic BIoinformatics: Diamond Informed Classification and Krona plot (MOBI DICK) 
 
-![mobi-dick logo](https://github.com/mattarnoldbio/MOBI-DICK/blob/master/mobi-dick.png)
+![mobi-dick logo](/mobi-dick.png)
 
 The MOBI DICK pipeline processes sequencing reads, trimming, deduplicating, and optionally filtering reads from a provided host genome, before classifying using Diamond BLASTX and presenting as a Krona plot.
 
