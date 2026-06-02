@@ -41,10 +41,11 @@ if __name__ == "__main__":
     accession = args.accession
     print(accession)
     if krona_metadata_dir is None:
-        if not read_mode:
-            krona_metadata_dir = output_dir + "/" + accession + "." + which_db + ".krona.html.files/" 
-        else:
-            krona_metadata_dir = output_dir + "/" + accession + ".reads." + which_db + ".krona.html.files/"
+        krona_metadata_dir = krona_plot_file + ".files/"
+        # if not read_mode:
+        #     krona_metadata_dir = output_dir + "/" + accession + "." + which_db + ".krona.html.files/" 
+        # else:
+        #     krona_metadata_dir = output_dir + "/" + accession + ".reads." + which_db + ".krona.html.files/"
     if accession is None:
         accession = contig_file.split("/")[-2]
         print(accession)
@@ -105,7 +106,7 @@ if __name__ == "__main__":
                     if not read_mode:
                         hits_df.loc[len(hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), ids[contig_id][0], ids[contig_id][1]]
                     else:
-                        length = len(contigs[contigs.index("@"+contig_id+"\n")+1])
+                        length = len(contigs[contigs.index(">"+ accession + "|" +contig_id+"\n")+1])
                         hits_df.loc[len(hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), length]
                 else:
                     contig_metadata = krona_metadata_dir + "/" + contig
@@ -124,7 +125,7 @@ if __name__ == "__main__":
                             contig_id = contig
                         if read_mode:
                             try:
-                                length = len(contigs[contigs.index("@"+contig_id+"\n")+1])
+                                length = len(contigs[contigs.index(">"+ accession + "|" +contig_id+"\n")+1])
                             except:
                                 length = [contigs.index(i) for i in contigs if contig_id in i][0]
 
@@ -135,11 +136,11 @@ if __name__ == "__main__":
                             hits_df.loc[len(hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), length]
 
         if not read_mode:
-            hits_df.loc[hits_df["mean_score"] < score_filter].to_csv("{}/{}_{}_virus_hits.csv".format(output_dir, which_db, accession), index=False)
+            hits_df.loc[hits_df["mean_score"] < score_filter].drop_duplicates().to_csv("{}/{}_{}_all_virus_hits.csv".format(output_dir, which_db, accession), index=False)
         else:
-            hits_df.loc[hits_df["mean_score"] < score_filter].to_csv("{}/{}_{}_read_level_virus_hits.csv".format(output_dir, which_db, accession), index=False)
+            hits_df.loc[hits_df["mean_score"] < score_filter].drop_duplicates().to_csv("{}/{}_{}_read_level_all_virus_hits.csv".format(output_dir, which_db, accession), index=False)
 
-
+    hits_df = ""
 
     if which_db == "blastn":
         all_hits=soup.find_all("members")
@@ -148,9 +149,10 @@ if __name__ == "__main__":
             if find_taxon(hit, "superkingdom") != "Viruses":  
                 non_viral_hits.append(hit)
 
-        non_viral_hits_df = pd.DataFrame(columns=["sample","contig","species", "genus", "family", "mean_score", "contig_multi", "contig_length"])
-
-
+        if not read_mode:
+            hits_df = pd.DataFrame(columns=["sample","contig","species", "genus", "family", "mean_score", "contig_multi", "contig_length"])
+        else:
+            hits_df = pd.DataFrame(columns=["sample","read","species", "genus", "family", "mean_score", "read_length"])
         for i, virus in enumerate(non_viral_hits):
             species = virus.findParents()[0].attrs["name"]
             #print(virus.findParents().find_all(attrs={"rank" : "genus"}))
@@ -166,9 +168,15 @@ if __name__ == "__main__":
                     contig_id = contig.split("|")[1]
                 else:
                     contig_id = contig
-                try: 
-                    non_viral_hits_df.loc[len(non_viral_hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), ids[contig_id][0], ids[contig_id][1]]
-                except:
+
+                if not os.path.isdir(krona_metadata_dir): 
+                    print("No metadata directory found for {}. If this is the desired outcome, take no action.".format(accession))
+                    if not read_mode:
+                        hits_df.loc[len(hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), ids[contig_id][0], ids[contig_id][1]]
+                    else:
+                        length = len(contigs[contigs.index(">"+ accession + "|" +contig_id+"\n")+1])
+                        hits_df.loc[len(hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), length]
+                else:
                     contig_metadata = krona_metadata_dir + "/" + contig
                     with open(contig_metadata) as fp:
                         lines = fp.readlines()
@@ -183,6 +191,19 @@ if __name__ == "__main__":
                             contig_id = contig.split("|")[1]
                         else:
                             contig_id = contig
-                        non_viral_hits_df.loc[len(non_viral_hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), ids[contig_id][0], ids[contig_id][1]]
+                        if read_mode:
+                            try:
+                                length = len(contigs[contigs.index(">"+ accession + "|" +contig_id+"\n")+1])
+                            except:
+                                length = [contigs.index(i) for i in contigs if contig_id in i][0]
 
-        non_viral_hits_df.loc[non_viral_hits_df["mean_score"] < score_filter].to_csv("{}/{}_{}_non_virus_hits.csv".format(output_dir, which_db, accession), index=False)
+                        if not read_mode:
+                            hits_df.loc[len(hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), ids[contig_id][0], ids[contig_id][1]]
+                        else:
+                            
+                            hits_df.loc[len(hits_df)] = [accession, contig_id, species, genus, family, float(mean_score), length]
+
+        if not read_mode:
+            hits_df.loc[hits_df["mean_score"] < score_filter].drop_duplicates().to_csv("{}/{}_{}_non_virus_hits.csv".format(output_dir, which_db, accession), index=False)
+        else:
+            hits_df.loc[hits_df["mean_score"] < score_filter].drop_duplicates().to_csv("{}/{}_{}_read_level_non_virus_hits.csv".format(output_dir, which_db, accession), index=False)

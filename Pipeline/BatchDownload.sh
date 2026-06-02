@@ -15,7 +15,7 @@ time {
     n=1 # specify column number of SRA ID in the csv file (numbering is inverse, from the last column)
     transcriptome_file=$1 # specify transcriptome csv file as input to this script
 
-    transcriptomes=$( tail -n +2 $transcriptome_file | rev | cut -f$n -d, | rev | shuf ) # extract SRA IDs from the csv file
+    transcriptomes=$( tail -n +2 $transcriptome_file | rev | cut -f$n -d, | tr -d '\r' | rev | shuf ) # extract SRA IDs from the csv file
 
 
     for record in $transcriptomes # loop through the SRA IDs

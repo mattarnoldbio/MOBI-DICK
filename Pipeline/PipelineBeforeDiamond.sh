@@ -146,35 +146,35 @@ for directory in $(ls -d $data_dir/*/); do # Loop through all directories in dat
   ${install_path}CheckProgress.sh -r $data_dir  # Check progress
 done
 
-echo All reads processed. Searching database for hits to viral genomes 
+# echo All reads processed. Searching database for hits to viral genomes 
 
-## RUN DIAMOND
-${install_path}RunDiamond.sh -d $data_dir -t $threads -b $database -k $krona_tools_db  # Run diamond on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
+# ## RUN DIAMOND
+# ${install_path}RunDiamond.sh -d $data_dir -t $threads -b $database -k $krona_tools_db  # Run diamond on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
 
-## POST PROCESS DIAMOND RESULTS
-${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w diamond -s $score_filter   # Post process diamond results
+# ## POST PROCESS DIAMOND RESULTS
+# ${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w diamond -s $score_filter   # Post process diamond results
 
-## RUN BLAST
-${install_path}RunBLAST.sh -d $data_dir -b $nuc_database -t $threads -k $krona_tools_db -x $xtra_fast  # Run blast on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
+# ## RUN BLAST
+# ${install_path}RunBLAST.sh -d $data_dir -b $nuc_database -t $threads -k $krona_tools_db -x $xtra_fast  # Run blast on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
 
-${install_path}CombineNonViralHits.sh -d $data_dir # Combine non viral hits
+# ${install_path}CombineNonViralHits.sh -d $data_dir # Combine non viral hits
 
-if [[ $filter_vertebrate == true ]]; then
-  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length --filter_vertebrate # Filter diamond hits
-else
-  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length # Filter diamond hits
-fi
-## POST PROCESS BLAST RESULTS
-#${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w blastn -s $score_filter # Post process diamond results
+# if [[ $filter_vertebrate == true ]]; then
+#   ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length --filter_vertebrate # Filter diamond hits
+# else
+#   ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length # Filter diamond hits
+# fi
+# ## POST PROCESS BLAST RESULTS
+# #${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w blastn -s $score_filter # Post process diamond results
 
-if [[ $map_reads == true ]]; then
-  ## MAP READS TO CONTIGS
-  if [[ $filter_vertebrate == true ]]; then
-    ${install_path}MapReadsToContigs.sh -d $data_dir -t $threads -c ${data_dir}/vertebrate_viral_hits.csv # Map reads to contigs
-  else
-    ${install_path}MapReadsToContigs.sh -d $data_dir -t $threads -c ${data_dir}/viral_hits.csv # Map reads to contigs
-  fi
-fi
+# if [[ $map_reads == true ]]; then
+#   ## MAP READS TO CONTIGS
+#   if [[ $filter_vertebrate == true ]]; then
+#     ${install_path}MapReadsToContigs.sh -d $data_dir -t $threads -c ${data_dir}/vertebrate_viral_hits.csv # Map reads to contigs
+#   else
+#     ${install_path}MapReadsToContigs.sh -d $data_dir -t $threads -c ${data_dir}/viral_hits.csv # Map reads to contigs
+#   fi
+# fi
 
 echo Pipeline complete 
 echo Pipeline complete >&3

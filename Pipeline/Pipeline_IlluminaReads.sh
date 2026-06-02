@@ -7,11 +7,11 @@
 Help()
 {
 
-echo MOBI-DICK PIPELINE
+echo MOBI-DICK NANOPORE PIPELINE
 echo
 echo Matt Arnold 2023
 echo
-echo This script is used to run the whole pipeline
+echo This script is used to run the parts of the piepline applicable for ONT reads
 echo
 echo ARGUMENTS
 echo -e '\t '          -h --help '\t\t\t'  display this help and exit
@@ -28,10 +28,6 @@ echo -e '\t '          -g --genome '\t\t\t'    path to host reference genome "(o
 echo -e '\t \t\t\t\t '                         "(GENOME MUST BE INDEXED WITH BOWTIE2, see Pipeline/IndexHostGenome.sh)"
 echo -e '\t \t\t\t\t '                         "path must end with directory/basename (e.g. home/Stuff/YourDirectory/YourGenome)"
 echo -e '\t \t\t\t\t '                         "where the .bt2 files are in YourDirectory and named YourGenome.1.bt2 etc."
-echo -e '\t '          -c --min_contig_length '\t'  minimum contig length to keep "(default = 250)"
-echo -e '\t '          -v --filter_vertebrate '\t'  separate suggested vertebrate and invertibrate viruses "(default = true)"
-echo -e '\t \t\t\t\t '                         "N.b. Sometimes taxonomy is not perfect and this will require manual checking" 
-#echo -e '\t '          -x --map_reads '\t\t'  map reads to contigs "(default = false)"
 #echo -e '\t '          -o --out_file '\t\t'  output file name
 echo
 echo SRA mining mode
@@ -42,8 +38,7 @@ echo
 echo -e optional i.e. not recommended
 echo -e '\t '          -n --no_host_filtering '\t'  skip host filtering "(Default = false)"
 echo -e '\t '          -f --score_filter '\t\t'  score filter for krona plots "(default = -10)"
-echo -e '\t '          -a --assembler '\t\t'  assembler to use "(megahit, spades or metaspades default = megahit_sensitive_1)"
-echo -e '\t '          -x --xtra_fast '\t\t'  use xtra fast mode for diamond "(default = false)"
+#echo -e '\t '          -a --assembler '\t\t'  assembler to use "(megahit, spades or metaspades default = megahit)"
 echo -e '\t'
 
 }
@@ -52,6 +47,7 @@ echo -e '\t'
 ################################################################################
 
 # PARSE COMMAND LINE ARGUMENTS
+
 while [[ "$#" -gt 0 ]]
   do
     case $1 in
@@ -66,11 +62,9 @@ while [[ "$#" -gt 0 ]]
       -u|--nuc_databse) nuc_database="$2"; shift;;
       -k|--krona_tools_db) krona_tools_db="$2"; shift;;
       -f|--score_filter) score_filter="$2"; shift;;
-      -a|--assembler) assembler="$2"; shift;;
       -c|--min_contig_length) min_contig_length="$2"; shift;;
-      -v|--filter_vertebrate) filter_vertebrate="$2"; shift;;
-#      -x|--map_reads) map_reads=$2; shift;;
-      -x|--xtra_fast) xtra_fast=$2; shift;;
+      -f|--filter_vertebrate) filter_vertebrate="$2"; shift;;
+#      -a|--assembler) assembler="$2"; shift;;
       -h|--help) Help; exit 1;;
     esac
     shift
@@ -94,12 +88,9 @@ install_path=$(dirname -- "$0")/ # Get path to install directory
 [[ -z $nuc_database ]] && nuc_database=/db/blast_v5/nt # Default database is nt
 [[ -z $krona_tools_db ]] && krona_tools_db=/db/kronatools/taxonomy # Default krona tools database is taxonomy
 [[ -z $score_filter ]] && score_filter=-10 # Default score filter is -10
-[[ -z $assembler ]] && assembler=megahit_sensitive_1 # Default assembler is megahit
-[[ -z $min_contig_length ]] && min_contig_length=250
-[[ -z $filter_vertebrate ]] && filter_vertebrate=true
-[[ -z $map_reads ]] && map_reads=false
-[[ -z $xtra_fast ]] && xtra_fast=false
-[[ -z $species_column ]] && species_column=3 # Default species column is 3 (this happened to be which column it was in the metadata file I was using)
+[[ -z $min_contig_length ]] && min_contig_length=150
+[[ -z $filter_vertebrate ]] && filter_vertebrate=false
+#[[ -z $assembler ]] && assembler=megahit # Default assembler is megahit
 
 
 log_file=${data_dir}/mobi_dick_$(date +"%d_%m_%y_%H_%M_%S").log
@@ -116,12 +107,7 @@ trap "date -Is" DEBUG
 
 for directory in $(ls -d $data_dir/*/); do # Loop through all directories in data_dir
 
-  if [[ -d ${directory}/contigs_out ]]; then
-    contigs_out=$(ls ${directory}/contigs_out | grep contigs.fa)
-    contig_file_length=$(wc -l $directory/contigs_out/$contigs_out | awk '{print $1}') # Get number of lines in contig file
-    [[ contig_file_length -ne 0 ]] && echo contigs found for ${directory}, skipping processing    && continue # Skip if contigs found
-  fi
-
+ 
   touch ${directory}/log.txt # Create log file
   echo "Processing $directory"  ${directory}/log.txt # Print directory name to log file
   echo Trimming reads  
@@ -135,46 +121,38 @@ for directory in $(ls -d $data_dir/*/); do # Loop through all directories in dat
   [[ -z $genome ]] && [[ ! -z $metadata ]] && ${install_path}HostFiltering.sh -r $directory  -h $host_ref_genome_dir -o $directory -t $threads -m $metadata -s $species_column -i $install_path   # Run host filtering if a metadata file was provided
   [[ -z $metadata ]]  && [[ ! -z $genome ]] && ${install_path}HostFiltering.sh -r $directory  -o $directory -t $threads -g $genome -i $install_path  # Run host filtering if a host genome was provided
   [[ -z $metadata ]] && [[ -z $genome ]] && echo No host genome or metadata file specified, skipping host filtering  # If neither a metadata file or host genome was provided, skip host filtering
-  echo Assembling reads using assembly preset $assembler 
-  ## ASSEMBLE READS
-  ${install_path}Assembly.sh -r $directory -o $directory -t $threads -i $install_path -a $assembler --no_host_filtering $no_host_filtering  # Run assembly
+#   echo Assembling reads using assembly preset $assembler 
+#   ## ASSEMBLE READS
+#   ${install_path}Assembly.sh -r $directory -o $directory -t $threads -i $install_path -a $assembler --no_host_filtering $no_host_filtering  # Run assembly
   
   ## COMPRESS FASTQ FILES
   ${install_path}CompressFASTQs.sh -r $directory -t $threads # Compress FASTQ files
 
-  ## CHECK PROGRESS
-  ${install_path}CheckProgress.sh -r $data_dir  # Check progress
+#   ## CHECK PROGRESS
+#   ${install_path}CheckProgress.sh -r $data_dir  # Check progress
 done
 
-echo All reads processed. Searching database for hits to viral genomes 
+#echo All reads processed. Searching database for hits to viral genomes 
 
 ## RUN DIAMOND
-${install_path}RunDiamond.sh -d $data_dir -t $threads -b $database -k $krona_tools_db  # Run diamond on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
+${install_path}RunBLASTReads.sh -d $data_dir -t $threads -w diamond -k $krona_tools_db  # Run diamond on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
 
 ## POST PROCESS DIAMOND RESULTS
-${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w diamond -s $score_filter   # Post process diamond results
+#${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w diamond -s $score_filter   # Post process diamond results
 
 ## RUN BLAST
-${install_path}RunBLAST.sh -d $data_dir -b $nuc_database -t $threads -k $krona_tools_db -x $xtra_fast  # Run blast on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
+${install_path}RunBLASTReads.sh -d $data_dir -t $threads -w blastn -k $krona_tools_db   # Run blast on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
 
-${install_path}CombineNonViralHits.sh -d $data_dir # Combine non viral hits
+${install_path}CombineNonViralHits.sh -d $data_dir -r true # Combine non viral hits
 
 if [[ $filter_vertebrate == true ]]; then
-  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length --filter_vertebrate # Filter diamond hits
+  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length --is_reads --filter_vertebrate # Filter diamond hits
 else
-  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length # Filter diamond hits
+  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length --is_reads # Filter diamond hits
 fi
+
 ## POST PROCESS BLAST RESULTS
 #${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w blastn -s $score_filter # Post process diamond results
-
-if [[ $map_reads == true ]]; then
-  ## MAP READS TO CONTIGS
-  if [[ $filter_vertebrate == true ]]; then
-    ${install_path}MapReadsToContigs.sh -d $data_dir -t $threads -c ${data_dir}/vertebrate_viral_hits.csv # Map reads to contigs
-  else
-    ${install_path}MapReadsToContigs.sh -d $data_dir -t $threads -c ${data_dir}/viral_hits.csv # Map reads to contigs
-  fi
-fi
 
 echo Pipeline complete 
 echo Pipeline complete >&3

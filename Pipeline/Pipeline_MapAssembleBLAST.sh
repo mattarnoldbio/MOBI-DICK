@@ -124,13 +124,13 @@ for directory in $(ls -d $data_dir/*/); do # Loop through all directories in dat
 
   touch ${directory}/log.txt # Create log file
   echo "Processing $directory"  ${directory}/log.txt # Print directory name to log file
-  echo Trimming reads  
-  ## TRIM READS
-  ${install_path}ReadTrimming.sh -r $directory -o $directory -t $threads   # Run read trimming
-  echo Deduplicating reads  
-  ## DEDUPLICATE READS
-  ${install_path}ReadDeduplication.sh -r $directory -o $directory -t $threads  # Run read deduplication
-  echo Attempting host filtering  
+  # echo Trimming reads  
+  # ## TRIM READS
+  # ${install_path}ReadTrimming.sh -r $directory -o $directory -t $threads   # Run read trimming
+  # echo Deduplicating reads  
+  # ## DEDUPLICATE READS
+  # ${install_path}ReadDeduplication.sh -r $directory -o $directory -t $threads  # Run read deduplication
+  # echo Attempting host filtering  
   ## FILTER HOST READS  
   [[ -z $genome ]] && [[ ! -z $metadata ]] && ${install_path}HostFiltering.sh -r $directory  -h $host_ref_genome_dir -o $directory -t $threads -m $metadata -s $species_column -i $install_path   # Run host filtering if a metadata file was provided
   [[ -z $metadata ]]  && [[ ! -z $genome ]] && ${install_path}HostFiltering.sh -r $directory  -o $directory -t $threads -g $genome -i $install_path  # Run host filtering if a host genome was provided

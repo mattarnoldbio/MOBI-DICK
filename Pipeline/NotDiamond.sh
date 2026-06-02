@@ -29,27 +29,27 @@ install_path=$(dirname -- "$0")/
 [[ -z $krona_tools_db ]] && krona_tools_db=/db/kronatools/taxonomy # Default krona tools database is taxonomy
 [[ -z $xtra_fast ]] && xtra_fast=false
 
-if [[ ! -f ${data_dir}/all_contigs.fa ]]; then
-  for directory in $(ls -d $data_dir/*/); do
-      accession=$(basename $directory)
-      contigs=${directory}/contigs_out/${accession}.contigs.fa
-      [[ ! -f $contigs ]] && echo WARNING: contigs not found for file ${accession}, skipping this sample && continue
-      cat $contigs | sed "s/^>/>${accession}|/" >> ${data_dir}/all_contigs.fa
-  done
-fi
+# if [[ ! -f ${data_dir}/all_contigs.fa ]]; then
+#   for directory in $(ls -d $data_dir/*/); do
+#       accession=$(basename $directory)
+#       contigs=${directory}/contigs_out/${accession}.contigs.fa
+#       [[ ! -f $contigs ]] && echo WARNING: contigs not found for file ${accession}, skipping this sample && continue
+#       cat $contigs | sed "s/^>/>${accession}|/" >> ${data_dir}/all_contigs.fa
+#   done
+# fi
 
 
-if [[ $xtra_fast == true ]]; then
-    blocks=4
-    chunks=2
-elif [[ $xtra_fast == false ]]; then
-    blocks=1
-    chunks=4
-fi
+# if [[ $xtra_fast == true ]]; then
+#     blocks=4
+#     chunks=2
+# elif [[ $xtra_fast == false ]]; then
+#     blocks=1
+#     chunks=4
+# fi
 
 
 
-diamond blastx -d $database -q ${data_dir}/all_contigs.fa -o ${data_dir}/all_contigs.${file_string}diamond.txt --outfmt 6 -p $threads -b $blocks -c $chunks
+#diamond blastx -d $database -q ${data_dir}/all_contigs.fa -o ${data_dir}/all_contigs.${file_string}diamond.txt --outfmt 6 -p $threads -b $blocks -c $chunks
 
 for directory in $(ls -d $data_dir/*/); do
     accession=$(basename $directory)

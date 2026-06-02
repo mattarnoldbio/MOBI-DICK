@@ -102,6 +102,8 @@ install_path=$(dirname -- "$0")/ # Get path to install directory
 [[ -z $species_column ]] && species_column=3 # Default species column is 3 (this happened to be which column it was in the metadata file I was using)
 
 
+
+
 log_file=${data_dir}/mobi_dick_$(date +"%d_%m_%y_%H_%M_%S").log
 echo Output logged to $log_file
 touch $log_file
@@ -111,45 +113,45 @@ exec 3>&1 1> $log_file 2>&1
 
 trap "date -Is" DEBUG
 
-# RUN PIPELINE
+# # RUN PIPELINE
 
 
-for directory in $(ls -d $data_dir/*/); do # Loop through all directories in data_dir
+# for directory in $(ls -d $data_dir/*/); do # Loop through all directories in data_dir
 
-  if [[ -d ${directory}/contigs_out ]]; then
-    contigs_out=$(ls ${directory}/contigs_out | grep contigs.fa)
-    contig_file_length=$(wc -l $directory/contigs_out/$contigs_out | awk '{print $1}') # Get number of lines in contig file
-    [[ contig_file_length -ne 0 ]] && echo contigs found for ${directory}, skipping processing    && continue # Skip if contigs found
-  fi
+#   if [[ -d ${directory}/contigs_out ]]; then
+#     contigs_out=$(ls ${directory}/contigs_out | grep contigs.fa)
+#     contig_file_length=$(wc -l $directory/contigs_out/$contigs_out | awk '{print $1}') # Get number of lines in contig file
+#     [[ contig_file_length -ne 0 ]] && echo contigs found for ${directory}, skipping processing    && continue # Skip if contigs found
+#   fi
 
-  touch ${directory}/log.txt # Create log file
-  echo "Processing $directory"  ${directory}/log.txt # Print directory name to log file
-  echo Trimming reads  
-  ## TRIM READS
-  ${install_path}ReadTrimming.sh -r $directory -o $directory -t $threads   # Run read trimming
-  echo Deduplicating reads  
-  ## DEDUPLICATE READS
-  ${install_path}ReadDeduplication.sh -r $directory -o $directory -t $threads  # Run read deduplication
-  echo Attempting host filtering  
-  ## FILTER HOST READS  
-  [[ -z $genome ]] && [[ ! -z $metadata ]] && ${install_path}HostFiltering.sh -r $directory  -h $host_ref_genome_dir -o $directory -t $threads -m $metadata -s $species_column -i $install_path   # Run host filtering if a metadata file was provided
-  [[ -z $metadata ]]  && [[ ! -z $genome ]] && ${install_path}HostFiltering.sh -r $directory  -o $directory -t $threads -g $genome -i $install_path  # Run host filtering if a host genome was provided
-  [[ -z $metadata ]] && [[ -z $genome ]] && echo No host genome or metadata file specified, skipping host filtering  # If neither a metadata file or host genome was provided, skip host filtering
-  echo Assembling reads using assembly preset $assembler 
-  ## ASSEMBLE READS
-  ${install_path}Assembly.sh -r $directory -o $directory -t $threads -i $install_path -a $assembler --no_host_filtering $no_host_filtering  # Run assembly
+#   touch ${directory}/log.txt # Create log file
+#   echo "Processing $directory"  ${directory}/log.txt # Print directory name to log file
+#   echo Trimming reads  
+#   ## TRIM READS
+#   ${install_path}ReadTrimming.sh -r $directory -o $directory -t $threads   # Run read trimming
+#   echo Deduplicating reads  
+#   ## DEDUPLICATE READS
+#   ${install_path}ReadDeduplication.sh -r $directory -o $directory -t $threads  # Run read deduplication
+#   echo Attempting host filtering  
+#   ## FILTER HOST READS  
+#   [[ -z $genome ]] && [[ ! -z $metadata ]] && ${install_path}HostFiltering.sh -r $directory  -h $host_ref_genome_dir -o $directory -t $threads -m $metadata -s $species_column -i $install_path   # Run host filtering if a metadata file was provided
+#   [[ -z $metadata ]]  && [[ ! -z $genome ]] && ${install_path}HostFiltering.sh -r $directory  -o $directory -t $threads -g $genome -i $install_path  # Run host filtering if a host genome was provided
+#   [[ -z $metadata ]] && [[ -z $genome ]] && echo No host genome or metadata file specified, skipping host filtering  # If neither a metadata file or host genome was provided, skip host filtering
+#   echo Assembling reads using assembly preset $assembler 
+#   ## ASSEMBLE READS
+#   ${install_path}Assembly.sh -r $directory -o $directory -t $threads -i $install_path -a $assembler --no_host_filtering $no_host_filtering  # Run assembly
   
-  ## COMPRESS FASTQ FILES
-  ${install_path}CompressFASTQs.sh -r $directory -t $threads # Compress FASTQ files
+#   ## COMPRESS FASTQ FILES
+#   ${install_path}CompressFASTQs.sh -r $directory -t $threads # Compress FASTQ files
 
-  ## CHECK PROGRESS
-  ${install_path}CheckProgress.sh -r $data_dir  # Check progress
-done
+#   ## CHECK PROGRESS
+#   ${install_path}CheckProgress.sh -r $data_dir  # Check progress
+# done
 
-echo All reads processed. Searching database for hits to viral genomes 
+# echo All reads processed. Searching database for hits to viral genomes 
 
-## RUN DIAMOND
-${install_path}RunDiamond.sh -d $data_dir -t $threads -b $database -k $krona_tools_db  # Run diamond on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
+# ## RUN DIAMOND
+# ${install_path}RunDiamond.sh -d $data_dir -t $threads -b $database -k $krona_tools_db  # Run diamond on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
 
 ## POST PROCESS DIAMOND RESULTS
 ${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w diamond -s $score_filter   # Post process diamond results

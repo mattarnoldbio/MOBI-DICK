@@ -22,7 +22,7 @@ while [[ "$#" -gt 0 ]]
       -t|--threads) threads="$2"; shift;;
       -i|--install_path) install_path="$2"; shift;;
       -a|--assembler) assembler="$2"; shift;;
-      -n|--no_host_filtering) no_host_filtering="$2"; shift;;
+      -n|--no_host_filtering) no_host_filtering=false; shift;;
       -s|--sensitive) sensitive=false; shift;;
     esac
     shift
@@ -37,13 +37,9 @@ paired=false # Set paired to false by default
 
 echo Assembling reads for sample $accession. 
 
-if [[ $no_host_filtering != true ]]
-  then
-    echo Processing unmapped reads
-elif [[ $no_host_filtering == true ]]
-  then
-    echo WARNING: No host filtering performed! If this was not the desired behaviour, check your original command input
-fi
+
+
+
 
 for file in ${a[@]}; do # check if paired end or single end
   #echo file is $file
@@ -56,7 +52,7 @@ for file in ${a[@]}; do # check if paired end or single end
       [[ ${file: -14} == "_unmap_2.fastq" ]] || [[ ${file: -17} == "_unmap_2.fastq.gz" ]] && paired=true && R2=$reads/$file && echo "Paired-end reads found. R2 is $R2"
   elif [[ $no_host_filtering == true ]]
     then
-      [[ ${file: -16} == "_1_trimmed.fq.gz" ]] || [[ ${file: -13} == "_1_trimmed.fq" ]] || [[ ${file: -11} == "val_1.fq.gz" ]] || [[ ${file: -8} == "val_1.fq" ]] || [[ ${file: -14} == "_trimmed.fq.gz" ]] || [[ ${file: -11} == "_trimmed.fq" ]] && R1=$reads/$file && echo R1 is $R1
+      [[ ${file: -16} == "_1_trimmed.fq.gz" ]] || [[ ${file: -13} == "_1_trimmed.fq" ]] || [[ ${file: -11} == "val_1.fq.gz" ]] || [[ ${file: -8} == "val_1.fq" ]] && R1=$reads/$file && echo R1 is $R1
       [[ ${file: -16} == "_2_trimmed.fq.gz" ]] || [[ ${file: -13} == "_2_trimmed.fq" ]] || [[ ${file: -11} == "val_2.fq.gz" ]] || [[ ${file: -8} == "val_2.fq" ]] && paired=true && R2=$reads/$file && echo "Paired-end reads found. R2 is $R2"
   fi
 done 

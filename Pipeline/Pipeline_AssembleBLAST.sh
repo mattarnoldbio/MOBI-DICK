@@ -62,6 +62,9 @@ while [[ "$#" -gt 0 ]]
       -k|--krona_tools_db) krona_tools_db="$2"; shift;;
       -f|--score_filter) score_filter="$2"; shift;;
       -a|--assembler) assembler="$2"; shift;;
+      -c|--min_contig_length) min_contig_length="$2"; shift;;
+      -v|--filter_vertebrate) filter_vertebrate="$2"; shift;;
+      -x|--map_reads) map_reads=$2; shift;;
       -h|--help) Help; exit 1;;
     esac
     shift
@@ -84,7 +87,23 @@ install_path=$(dirname -- "$0")/ # Get path to install directory
 [[ -z $nuc_database ]] && nuc_database=/db/blast_v5/nt # Default database is nt
 [[ -z $krona_tools_db ]] && krona_tools_db=/db/kronatools/taxonomy # Default krona tools database is taxonomy
 [[ -z $score_filter ]] && score_filter=-10 # Default score filter is -10
-[[ -z $assembler ]] && assembler=megahit # Default assembler is megahit
+[[ -z $assembler ]] && assembler=megahit_sensitive_1_sensitive_1 # Default assembler is megahit
+[[ -z $min_contig_length ]] && min_contig_length=250
+[[ -z $filter_vertebrate ]] && filter_vertebrate=true
+[[ -z $map_reads ]] && map_reads=false
+[[ -z $species_column ]] && species_column=3
+
+
+
+
+log_file=${data_dir}/mobi_dick_$(date +"%d_%m_%y_%H_%M_%S").log
+echo Output logged to $log_file
+touch $log_file
+echo Processing files in $data_dir 
+
+exec 3>&1 1> $log_file 2>&1
+
+trap "date -Is" DEBUG
 
 
 # RUN PIPELINE
@@ -122,6 +141,8 @@ for directory in $(ls -d $data_dir/*/); do # Loop through all directories in dat
   ${install_path}CheckProgress.sh -r $data_dir # Check progress
 done
 
+echo All reads processed. Searching database for hits to viral genomes 
+
 ## RUN DIAMOND
 ${install_path}RunDiamond.sh -d $data_dir -t $threads -b $database -k $krona_tools_db # Run diamond on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
 
@@ -132,4 +153,16 @@ ${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w diamond -s
 ${install_path}RunBLAST.sh -d $data_dir -b $nuc_database -t $threads -k $krona_tools_db # Run blast on all contigs (for perfomrance reasons, this is done on a file of all contigs concatenated together)
 
 ## POST PROCESS BLAST RESULTS
-${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w blastn -s $score_filter # Post process diamond results
+#${install_path}PostProcessKrona.sh -d $data_dir -i ${install_path} -w blastn -s $score_filter # Post process diamond results
+
+${install_path}CombineNonViralHits.sh -d $data_dir # Combine non viral hits
+
+if [[ $filter_vertebrate == true ]]; then
+  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length --filter_vertebrate # Filter diamond hits
+else
+  ${install_path}FilterDiamondHits.py -d $data_dir --diamond_cutoff 0 --blast_cutoff 0 --min_contig_length $min_contig_length # Filter diamond hits
+fi
+
+
+echo Pipeline complete 
+echo Pipeline complete >&3

@@ -29,7 +29,7 @@ for directory in $(ls -d $data_dir/*/); do
     elif [[ $read_mode == True ]]; then
       python ${install_path}/ParseKrona.py -k ${data_dir}/${accession}/${accession}.${which_db}.krona.html -c ${data_dir}/${accession}/contigs_out/${accession}.contigs.fa -o ${data_dir}/${accession}/ -a $accession -w $which_db -s $score_filter  --read_mode
     fi
-    tail -n+2 ${data_dir}/${accession}/${which_db}_${accession}_virus_hits.csv >> ${data_dir}/${which_db}_all_virus_hits.csv
+    tail -n+2 ${data_dir}/${accession}/${which_db}_${accession}_all_virus_hits.csv >> ${data_dir}/${which_db}_all_virus_hits.csv
 done
 
 # python ${install_path}/JoinResults.py -d $data_dir

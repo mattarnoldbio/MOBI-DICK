@@ -45,7 +45,7 @@ if [[ ! -f ${data_dir}/all_contigs_hits.fa ]] || [[ $(($(wc -l all_contigs_hits.
         accession=$(basename $directory) # Get the accession number
         if [[ ! -f ${directory}/${accession}_no_virus_hits.txt ]]; then # If there are virus hits
             contigs=${directory}/contigs_out/${accession}.contigs.fa # Get the contigs file
-            virus_hits=$(cat ${directory}/diamond_${accession}_virus_hits.csv | cut -f 2 -d "," | tail -n+2 ) # Extract the information about which sequences contained hits to viruses
+            virus_hits=$(cat ${directory}/diamond_${accession}_all_virus_hits.csv | cut -f 2 -d "," | tail -n+2 ) # Extract the information about which sequences contained hits to viruses
             for hit in $virus_hits; do # For each hit
                 contig=$(grep "${hit} " ${directory}/contigs_out/${accession}.contigs.fa -A 1) # Extract the contig header and sequence from the contigs file
                 echo "$contig" | sed "s/^>/>${accession}|/" >> ${data_dir}/all_contigs_hits.fa # Add the accession number to the contig header and append to the all_contigs_hits.fa file
@@ -58,7 +58,7 @@ blastn -db $database -query ${data_dir}/all_contigs_hits.fa -out ${data_dir}/all
 
 for directory in $(ls -d $data_dir/*/); do
     accession=$(basename $directory)
-    cat ${data_dir}/all_contigs_hits.blastn.txt | grep ${accession} > ${data_dir}/${accession}/${accession}.blastn.txt
+    cat ${data_dir}/all_contigs_hits.blastn.txt | grep "${accession}|" > ${data_dir}/${accession}/${accession}.blastn.txt
     ktImportBLAST ${data_dir}/${accession}/${accession}.blastn.txt -o ${data_dir}/${accession}/${accession}.blastn.krona.html -tax $krona_tools_db
 done
 

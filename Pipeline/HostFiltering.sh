@@ -38,8 +38,9 @@ done
 
 # conda activate SRA_mining
 
-[[ -z $threads ]] && threads=10 # Default number of threads is 10
+[[ -z $threads ]] && threads=8 # Default number of threads is 10
 [[ -z $install_path ]] && install_path=$(dirname -- "$0")/ # Get path to install directory
+[[ -z species_column ]] && species_column=3 # Default species column is 3 (this happened to be which column it was in the metadata file I was using)
 
 accession=$(basename `readlink -f $raw_reads`) # Extract accession number from path
 
@@ -118,8 +119,8 @@ echo genome is $genome
 #[[ $paired ]] && bowtie2 -p 10 --local -x $genome -1 $R1 -2 $R2 --quiet || bowtie2 -p 10 --local -x $genome -U $R1  
 
 # Post-process the alignment file and format it for downstream analysis
-samtools view -@ 10 -bS ${raw_reads}/${accession}.sam > ${raw_reads}/${accession}.bam
-samtools sort -@ 10 ${raw_reads}/${accession}.bam -o ${raw_reads}/${accession}.bam
+samtools view -@ $threads -bS ${raw_reads}/${accession}.sam > ${raw_reads}/${accession}.bam
+samtools sort -@ $threads ${raw_reads}/${accession}.bam -o ${raw_reads}/${accession}.bam
 samtools index ${raw_reads}/${accession}.bam
 
 # Extract the reads that did not map to the host genome
@@ -132,4 +133,4 @@ echo "host-filtered reads" >> ${raw_reads}/log.txt
 [[ $paired == true ]] && expr `(wc -l ${raw_reads}/*_unmap_1.fastq |cut -f1 -d " ")` / 4 >> ${raw_reads}/log.txt || expr `(wc -l ${raw_reads}/*_unmap.fastq |cut -f1 -d " ")` / 4 >> ${raw_reads}/log.txt
 
 
-#conda deactivate
+#conda deactivate_
